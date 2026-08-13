@@ -60,5 +60,110 @@ The demo currently supports:
 
 The current backend operates in:
 
-```text
-DEMO_MODE=true
+                         ┌──────────────────────┐
+                         │      React UI        │
+                         │   localhost:5174      │
+                         └──────────┬───────────┘
+                                    │
+                                    │ REST API
+                                    ▼
+                         ┌──────────────────────┐
+                         │    Node.js Backend   │
+                         │   Express API :5000  │
+                         └──────────┬───────────┘
+                                    │
+                 ┌──────────────────┼──────────────────┐
+                 │                  │                  │
+                 ▼                  ▼                  ▼
+          ┌────────────┐     ┌────────────┐     ┌────────────┐
+          │   GitHub   │     │  Jenkins   │     │ Cost Engine│
+          │  Service   │     │  Service   │     │            │
+          └────────────┘     └────────────┘     └────────────┘
+                                    │
+                                    ▼
+                              ┌───────────┐
+                              │  Docker   │
+                              └─────┬─────┘
+                                    │
+                                    ▼
+                              ┌───────────┐
+                              │    ECR    │
+                              └─────┬─────┘
+                                    │
+                                    ▼
+                              ┌───────────┐
+                              │    EKS    │
+                              │ Kubernetes│
+                              └─────┬─────┘
+                                    │
+                         ┌──────────┴──────────┐
+                         ▼                     ▼
+                   ┌───────────┐         ┌───────────┐
+                   │Prometheus │         │  Grafana  │
+                   └───────────┘         └───────────┘
+
+Enterprise-DevOps-Platform-Deployment/
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── CodePanel.jsx
+│   │   │   ├── CostPanel.jsx
+│   │   │   ├── Header.jsx
+│   │   │   ├── LogPanel.jsx
+│   │   │   ├── Panel.jsx
+│   │   │   ├── Pipeline.jsx
+│   │   │   ├── RepoInput.jsx
+│   │   │   └── Stage.jsx
+│   │   │
+│   │   ├── data/
+│   │   │   ├── costs.js
+│   │   │   ├── languages.js
+│   │   │   └── stages.js
+│   │   │
+│   │   ├── styles/
+│   │   │   └── global.css
+│   │   │
+│   │   ├── utils/
+│   │   │   ├── api.js
+│   │   │   └── pipeline.js
+│   │   │
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   │
+│   ├── index.html
+│   ├── package.json
+│   └── package-lock.json
+│
+├── backend/
+│   ├── routes/
+│   │   ├── repository.js
+│   │   ├── pipeline.js
+│   │   ├── deployment.js
+│   │   └── cost.js
+│   │
+│   ├── controllers/
+│   │   ├── repositoryController.js
+│   │   ├── pipelineController.js
+│   │   └── deploymentController.js
+│   │
+│   ├── services/
+│   │   ├── githubService.js
+│   │   ├── jenkinsService.js
+│   │   ├── dockerService.js
+│   │   ├── kubernetesService.js
+│   │   ├── terraformService.js
+│   │   └── awsService.js
+│   │
+│   ├── middleware/
+│   │   └── errorHandler.js
+│   │
+│   ├── utils/
+│   │   └── logger.js
+│   │
+│   ├── server.js
+│   ├── package.json
+│   └── .env
+│
+├── .gitignore
+└── README.md
