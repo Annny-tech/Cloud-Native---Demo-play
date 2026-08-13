@@ -102,6 +102,7 @@ The current backend operates in:
                    │Prometheus │         │  Grafana  │
                    └───────────┘         └───────────┘
 
+```
 Enterprise-DevOps-Platform-Deployment/
 │
 ├── frontend/
@@ -167,3 +168,4 @@ Enterprise-DevOps-Platform-Deployment/
 │
 ├── .gitignore
 └── README.md
+```
