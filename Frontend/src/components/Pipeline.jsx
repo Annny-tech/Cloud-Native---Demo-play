@@ -175,9 +175,8 @@ export default function Pipeline({ pipeline }) {
                 index={index}
               >
                 <CostPanel
-                  serviceName={pipeline.serviceName}
-                  onDeploy={pipeline.deploy}
-                />
+                 serviceName={pipeline.serviceName}
+              />
               </Stage>
             );
           }

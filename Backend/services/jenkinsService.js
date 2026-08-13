@@ -9,7 +9,8 @@ const wait = (ms) =>
 
 export async function createPipeline(
   repoUrl,
-  branch
+  branch,
+  artifacts = {}
 ) {
   const pipelineId =
     crypto.randomUUID();
@@ -25,26 +26,37 @@ export async function createPipeline(
 
     stages: [
       {
+        id: "checkout",
         name: "Checkout",
         status: "RUNNING"
       },
+
       {
+        id: "build",
         name: "Build",
         status: "PENDING"
       },
+
       {
+        id: "docker",
         name: "Docker",
         status: "PENDING"
       },
+
       {
+        id: "terraform",
         name: "Terraform",
         status: "PENDING"
       },
+
       {
+        id: "deploy",
         name: "Deploy",
         status: "PENDING"
       }
     ],
+
+    artifacts,
 
     createdAt:
       new Date().toISOString()
@@ -55,7 +67,9 @@ export async function createPipeline(
     pipeline
   );
 
-  runDemoPipeline(pipelineId);
+  runDemoPipeline(
+    pipelineId
+  );
 
   return pipeline;
 }
@@ -78,13 +92,24 @@ async function runDemoPipeline(
     pipeline.stages[i].status =
       "RUNNING";
 
-    await wait(1200);
+    pipelines.set(
+      pipelineId,
+      pipeline
+    );
+
+    await wait(1500);
 
     pipeline.stages[i].status =
       "SUCCESS";
+
+    pipelines.set(
+      pipelineId,
+      pipeline
+    );
   }
 
-  pipeline.status = "SUCCESS";
+  pipeline.status =
+    "SUCCESS";
 
   pipeline.completedAt =
     new Date().toISOString();

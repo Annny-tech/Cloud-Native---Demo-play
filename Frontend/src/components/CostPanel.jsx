@@ -1,37 +1,109 @@
-import { useMemo, useState } from "react";
+import {
+  useEffect,
+  useState
+} from "react";
 
-import { INSTANCE_COSTS } from "../data/costs";
-import { calculateCost } from "../utils/cost";
+import {
+  getCost,
+  createDeploymentPlan,
+  applyDeployment
+} from "../utils/api";
+
 import LogPanel from "./LogPanel";
 
 export default function CostPanel({
-  serviceName,
-  onDeploy
+  serviceName
 }) {
-  const [instance, setInstance] = useState("t3.medium");
-  const [nodes, setNodes] = useState(2);
+  const [instance, setInstance] =
+    useState("t3.medium");
 
-  const [deploying, setDeploying] = useState(false);
-  const [result, setResult] = useState(null);
+  const [nodes, setNodes] =
+    useState(2);
 
-  const estimate = useMemo(() => {
-    return calculateCost(instance, nodes);
+  const [cost, setCost] =
+    useState(null);
+
+  const [loadingCost, setLoadingCost] =
+    useState(false);
+
+  const [deploying, setDeploying] =
+    useState(false);
+
+  const [result, setResult] =
+    useState(null);
+
+  async function loadCost() {
+    try {
+      setLoadingCost(true);
+
+      const response =
+        await getCost(
+          instance,
+          nodes
+        );
+
+      setCost(
+        response.data
+      );
+
+    } catch (error) {
+      console.error(
+        "Cost error:",
+        error
+      );
+
+    } finally {
+      setLoadingCost(false);
+    }
+  }
+
+  useEffect(() => {
+    loadCost();
   }, [instance, nodes]);
 
-  const deploy = async () => {
-    setDeploying(true);
+  async function deploy() {
+    try {
+      setDeploying(true);
 
-    const deployment = await onDeploy(serviceName);
+      // First create Terraform plan
+      await createDeploymentPlan(
+        serviceName,
+        instance,
+        nodes
+      );
 
-    setResult(deployment);
-    setDeploying(false);
-  };
+      // Then apply it
+      const response =
+        await applyDeployment(
+          serviceName
+        );
+
+      setResult(
+        response.data
+      );
+
+    } catch (error) {
+      console.error(
+        "Deployment error:",
+        error
+      );
+
+      alert(
+        error.message ||
+        "Deployment failed"
+      );
+
+    } finally {
+      setDeploying(false);
+    }
+  }
 
   return (
     <>
       <div className="panel">
 
         <div className="panel-head">
+
           <span className="fname">
             estimated monthly cost
           </span>
@@ -39,6 +111,7 @@ export default function CostPanel({
           <span className="badge">
             us-east-1
           </span>
+
         </div>
 
         <div className="selectrow">
@@ -46,81 +119,177 @@ export default function CostPanel({
           <select
             value={instance}
             onChange={(e) =>
-              setInstance(e.target.value)
+              setInstance(
+                e.target.value
+              )
             }
           >
-            {Object.keys(INSTANCE_COSTS).map((key) => (
-              <option
-                value={key}
-                key={key}
-              >
-                {key}
-              </option>
-            ))}
+
+            <option value="t3.medium">
+              t3.medium
+            </option>
+
+            <option value="t3.large">
+              t3.large
+            </option>
+
+            <option value="m6i.large">
+              m6i.large
+            </option>
+
           </select>
 
           <select
             value={nodes}
             onChange={(e) =>
-              setNodes(Number(e.target.value))
+              setNodes(
+                Number(
+                  e.target.value
+                )
+              )
             }
           >
-            {[1, 2, 3, 4].map((n) => (
-              <option
-                value={n}
-                key={n}
-              >
-                {n} node{n > 1 ? "s" : ""}
-              </option>
-            ))}
+
+            <option value="1">
+              1 node
+            </option>
+
+            <option value="2">
+              2 nodes
+            </option>
+
+            <option value="3">
+              3 nodes
+            </option>
+
+            <option value="4">
+              4 nodes
+            </option>
+
           </select>
 
         </div>
 
-        <div className="cost-grid">
+        {loadingCost && (
+          <div className="loglines">
+            Calculating AWS estimate…
+          </div>
+        )}
 
-          {estimate.rows.map(
-            ([label, amount]) => (
-              <div
-                className="cost-row"
-                key={label}
-              >
-                <div className="cost-label">
-                  {label}
-                </div>
+        {cost && (
+          <div className="cost-grid">
 
-                <div className="cost-amt">
-                  {amount}
-                </div>
+            <div className="cost-row">
+              <div className="cost-label">
+                EKS control plane
               </div>
-            )
-          )}
 
-          <div className="cost-row cost-total">
-
-            <div className="cost-label">
-              Estimated total / month
+              <div className="cost-amt">
+                $
+                {cost.breakdown
+                  .eksControlPlane
+                  .toFixed(2)}
+              </div>
             </div>
 
-            <div className="cost-amt">
-              ${estimate.total.toFixed(2)}
+            <div className="cost-row">
+              <div className="cost-label">
+                Worker nodes —{" "}
+                {nodes}× {cost.instanceLabel}
+              </div>
+
+              <div className="cost-amt">
+                $
+                {cost.breakdown
+                  .workerNodes
+                  .toFixed(2)}
+              </div>
+            </div>
+
+            <div className="cost-row">
+              <div className="cost-label">
+                Application Load Balancer
+              </div>
+
+              <div className="cost-amt">
+                $
+                {cost.breakdown
+                  .applicationLoadBalancer
+                  .toFixed(2)}
+              </div>
+            </div>
+
+            <div className="cost-row">
+              <div className="cost-label">
+                NAT gateway
+              </div>
+
+              <div className="cost-amt">
+                $
+                {cost.breakdown
+                  .natGateway
+                  .toFixed(2)}
+              </div>
+            </div>
+
+            <div className="cost-row">
+              <div className="cost-label">
+                ECR image storage
+              </div>
+
+              <div className="cost-amt">
+                $
+                {cost.breakdown
+                  .ecrStorage
+                  .toFixed(2)}
+              </div>
+            </div>
+
+            <div className="cost-row">
+              <div className="cost-label">
+                Data transfer
+              </div>
+
+              <div className="cost-amt">
+                $
+                {cost.breakdown
+                  .dataTransfer
+                  .toFixed(2)}
+              </div>
+            </div>
+
+            <div className="cost-row cost-total">
+
+              <div className="cost-label">
+                Estimated total / month
+              </div>
+
+              <div className="cost-amt">
+                $
+                {cost.estimatedMonthlyCost.toFixed(
+                  2
+                )}
+              </div>
+
             </div>
 
           </div>
-
-        </div>
+        )}
 
         <div className="warn">
-          This is a rough estimate from list
-          on-demand pricing — actual AWS billing
-          will vary with data transfer, savings
-          plans, and region.
+          This is a rough estimate from
+          on-demand pricing. Actual AWS
+          billing varies by region,
+          data transfer and usage.
         </div>
 
         <button
           className="deploybtn"
           onClick={deploy}
-          disabled={deploying}
+          disabled={
+            deploying ||
+            loadingCost
+          }
         >
           {deploying
             ? "Deploying…"
@@ -134,7 +303,14 @@ export default function CostPanel({
           <LogPanel
             filename="deployment logs"
             badge="AWS"
-            lines={result.logs}
+            lines={[
+              "Terraform initialized",
+              "Terraform plan created",
+              "ECR repository created",
+              "EKS node group created",
+              "Kubernetes deployment applied",
+              "Kubernetes service created"
+            ]}
           />
 
           <div className="success">
@@ -145,7 +321,10 @@ export default function CostPanel({
 
             <div className="url">
               Service reachable at{" "}
-              <b>{result.url}</b>
+
+              <b>
+                {result.endpoint}
+              </b>
             </div>
 
           </div>

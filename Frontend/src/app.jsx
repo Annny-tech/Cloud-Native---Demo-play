@@ -19,19 +19,39 @@ export default function App() {
   const [running, setRunning] = useState(false);
 
   const startPipeline = async (url = repoUrl) => {
-    const cleanUrl = url.trim() || PRESETS[0];
+  const cleanUrl =
+    url.trim() || PRESETS[0];
 
-    setRepoUrl(cleanUrl);
-    setRunning(true);
-    setPipeline(null);
+  setRepoUrl(cleanUrl);
+  setRunning(true);
+  setPipeline(null);
 
-    const result = await runPipeline(cleanUrl, (state) => {
-      setPipeline({ ...state });
-    });
+  try {
+    const result = await runPipeline(
+      cleanUrl,
+      (state) => {
+        setPipeline({
+          ...state
+        });
+      }
+    );
 
     setPipeline(result);
+
+  } catch (error) {
+    console.error(
+      "Pipeline error:",
+      error
+    );
+
+    alert(
+      `Pipeline failed: ${error.message}`
+    );
+
+  } finally {
     setRunning(false);
-  };
+  }
+};
 
   return (
     <main className="wrap">
